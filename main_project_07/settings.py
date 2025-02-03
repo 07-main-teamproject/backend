@@ -11,21 +11,32 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv  # .env 불러오기
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# .env 파일 로드
+if not load_dotenv():
+    raise ValueError("❌ ERROR: .env file not found or could not be loaded!")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-n(mctnp+19bzib*l=jkmdng^yad96_0l^t+n#q5m11&-uii@)1'
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("❌ ERROR: SECRET_KEY is not set in the environment variables!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+
+# Debugging용 환경 변수 출력
+print("🔍 DEBUG:", DEBUG)
+print("🔍 DB_NAME:", os.getenv("DB_NAME"))
+print("🔍 DB_USER:", os.getenv("DB_USER"))
+print("🔍 DB_HOST:", os.getenv("DB_HOST"))
+print("🔍 DB_PORT:", os.getenv("DB_PORT"))
 
 
 # Application definition
@@ -54,8 +65,7 @@ ROOT_URLCONF = 'main_project_07.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,20 +81,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'main_project_07.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+# Database (PostgreSQL로 변경)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv("DB_NAME"),
+        'USER': os.getenv("DB_USER"),
+        'PASSWORD': os.getenv("DB_PASSWORD"),
+        'HOST': os.getenv("DB_HOST"),
+        'PORT': os.getenv("DB_PORT"),
     }
 }
 
+# 데이터베이스 환경 변수 확인 (누락된 값이 있으면 실행 중지)
+for key in ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
+    if not os.getenv(key):
+        raise ValueError(f"❌ ERROR: {key} is not set in the environment variables!")
+
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -102,8 +117,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -114,11 +127,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = 'static/'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
