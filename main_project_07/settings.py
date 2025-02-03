@@ -21,26 +21,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 if not load_dotenv():
     raise ValueError("❌ ERROR: .env file not found or could not be loaded!")
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# 필수 환경 변수 로드
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("❌ ERROR: SECRET_KEY is not set in the environment variables!")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
-
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
-# Debugging용 환경 변수 출력
-print("🔍 DEBUG:", DEBUG)
-print("🔍 DB_NAME:", os.getenv("DB_NAME"))
-print("🔍 DB_USER:", os.getenv("DB_USER"))
-print("🔍 DB_HOST:", os.getenv("DB_HOST"))
-print("🔍 DB_PORT:", os.getenv("DB_PORT"))
-
+# Debugging용 환경 변수 출력 (DEBUG 모드일 때만)
+if DEBUG:
+    print("🔍 DEBUG:", DEBUG)
+    print("🔍 DB_NAME:", os.getenv("DB_NAME"))
+    print("🔍 DB_USER:", os.getenv("DB_USER"))
+    print("🔍 DB_HOST:", os.getenv("DB_HOST"))
+    print("🔍 DB_PORT:", os.getenv("DB_PORT"))
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -81,14 +78,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'main_project_07.wsgi.application'
 
 
-# Database (PostgreSQL로 변경)
+# **📌 DB 설정 (Docker 또는 로컬 환경 감지)**
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST"),
+        'HOST': os.getenv("DB_HOST") if os.getenv("RUNNING_IN_DOCKER") else "localhost",
         'PORT': os.getenv("DB_PORT"),
     }
 }
@@ -98,36 +95,23 @@ for key in ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
     if not os.getenv(key):
         raise ValueError(f"❌ ERROR: {key} is not set in the environment variables!")
 
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

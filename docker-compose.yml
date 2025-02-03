@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -14,6 +14,25 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  web:
+    build: .
+    container_name: diet-django-web
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env  # .env 파일을 명확하게 로드
+    environment:
+      - RUNNING_IN_DOCKER=True  # 컨테이너 내부 실행 여부 감지
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: ["gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application"]
+
 volumes:
   pgdata:
+
+
+
 
