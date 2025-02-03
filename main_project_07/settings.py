@@ -18,10 +18,13 @@ from dotenv import load_dotenv  # .env 불러오기
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # .env 파일 로드
-load_dotenv()
+if not load_dotenv():
+    print("⚠ WARNING: .env file not found or could not be loaded.")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-n(mctnp+19bzib*l=jkmdng^yad96_0l^t+n#q5m11&-uii@)1")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("❌ ERROR: SECRET_KEY is not set in the environment variables!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
@@ -75,11 +78,11 @@ WSGI_APPLICATION = 'main_project_07.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME"),
-        'USER': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST"),
-        'PORT': os.getenv("DB_PORT"),
+        'NAME': os.getenv("DB_NAME", "default_db"),
+        'USER': os.getenv("DB_USER", "default_user"),
+        'PASSWORD': os.getenv("DB_PASSWORD", "default_password"),
+        'HOST': os.getenv("DB_HOST", "localhost"),
+        'PORT': os.getenv("DB_PORT", "5432"),
     }
 }
 
