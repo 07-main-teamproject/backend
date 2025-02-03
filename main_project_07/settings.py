@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # .env 파일 로드
 if not load_dotenv():
-    print("⚠ WARNING: .env file not found or could not be loaded.")
+    raise ValueError("❌ ERROR: .env file not found or could not be loaded!")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -30,6 +30,13 @@ if not SECRET_KEY:
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+
+# Debugging용 환경 변수 출력
+print("🔍 DEBUG:", DEBUG)
+print("🔍 DB_NAME:", os.getenv("DB_NAME"))
+print("🔍 DB_USER:", os.getenv("DB_USER"))
+print("🔍 DB_HOST:", os.getenv("DB_HOST"))
+print("🔍 DB_PORT:", os.getenv("DB_PORT"))
 
 
 # Application definition
@@ -78,13 +85,18 @@ WSGI_APPLICATION = 'main_project_07.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME", "default_db"),
-        'USER': os.getenv("DB_USER", "default_user"),
-        'PASSWORD': os.getenv("DB_PASSWORD", "default_password"),
-        'HOST': os.getenv("DB_HOST", "localhost"),
-        'PORT': os.getenv("DB_PORT", "5432"),
+        'NAME': os.getenv("DB_NAME"),
+        'USER': os.getenv("DB_USER"),
+        'PASSWORD': os.getenv("DB_PASSWORD"),
+        'HOST': os.getenv("DB_HOST"),
+        'PORT': os.getenv("DB_PORT"),
     }
 }
+
+# 데이터베이스 환경 변수 확인 (누락된 값이 있으면 실행 중지)
+for key in ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
+    if not os.getenv(key):
+        raise ValueError(f"❌ ERROR: {key} is not set in the environment variables!")
 
 
 # Password validation
