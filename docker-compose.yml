@@ -22,12 +22,10 @@ services:
       - db
     env_file:
       - .env
-    ports:
-      - "8000:8000"
     volumes:
       - .:/app
-      - static_volume:/app/staticfiles  # 정적 파일 공유 볼륨 추가
-    command: ["gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application"]
+    command: [ "gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application" ]
+
 
   nginx:
     image: nginx:latest
