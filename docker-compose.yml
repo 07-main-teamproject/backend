@@ -24,6 +24,7 @@ services:
       - .env
     volumes:
       - .:/app
+      - ./staticfiles:/app/staticfiles
     command: [ "gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application" ]
 
 
@@ -37,12 +38,11 @@ services:
       - web
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - static_volume:/app/staticfiles  #정적 파일 공유 볼륨 추가
+      - ./staticfiles:/app/staticfiles  #정적 파일 공유 볼륨 추가
 
 volumes:
   pgdata:
   static_volume:  #정적 파일 볼륨 정의
-
 
 
 
