@@ -1,6 +1,4 @@
-# 1. Python 3.10 이미지 사용
-# 1. Python 3.10 이미지 사용
-FROM python:3.10
+FROM python:3.12-alpine3.20
 
 # 2. 작업 디렉토리 설정
 WORKDIR /app
