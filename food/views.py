@@ -55,6 +55,8 @@ class FoodInfoView(APIView):
                         "tags": product.get("ingredients_tags", []),
                     }
                     food_list.append(food_data)
+                # 캐시에 데이터 저장 (60분 = 3600초)
+                cache.set(cache_key, food_list, timeout=3600)
 
                 return Response(food_list, status=status.HTTP_200_OK)
 
