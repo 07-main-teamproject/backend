@@ -133,3 +133,10 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',  # JSON 응답만 반환하도록 설정
     ),
 }
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",  # 로컬 메모리 캐싱
+        "LOCATION": "unique-snowflake",  # 캐시 구분을 위한 위치명
+    }
+}
