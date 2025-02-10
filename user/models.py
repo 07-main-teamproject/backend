@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from common.models import CommonModel
 
 # ✅ 사용자 정의 매니저
 class CustomUserManager(BaseUserManager):
@@ -44,3 +45,17 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+# ✅ Profile 모델 추가
+class Profile(CommonModel):  # ✅ CommonModel을 상속받아 생성/수정 시간 자동 추가
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    age = models.IntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=10, null=True, blank=True)
+    height = models.FloatField(null=True, blank=True)
+    weight = models.FloatField(null=True, blank=True)
+    target_weight = models.FloatField(null=True, blank=True)
+    allergies = models.TextField(blank=True, null=True)  # ✅ 알레르기 정보 (선택 사항)
+    preferences = models.TextField(blank=True, null=True)  # ✅ 음식 선호도
+
+    def __str__(self):
+        return f"{self.user.email}의 프로필"

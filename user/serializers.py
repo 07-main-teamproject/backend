@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from .models import User
-from profiles.models import Profile
+from .models import User,Profile
 from django.contrib.auth.hashers import check_password
 
 class RegisterSerializer(serializers.ModelSerializer):
