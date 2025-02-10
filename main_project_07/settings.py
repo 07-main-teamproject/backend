@@ -52,6 +52,7 @@ CUSTOM_USER_APPS = [
     'food',
     'common',
     'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 INSTALLED_APPS = DJANGO_SYSTEM_APPS + CUSTOM_USER_APPS
@@ -130,9 +131,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',  # JSON 응답만 반환하도록 설정
+        'rest_framework.renderers.JSONRenderer',  # ✅ JSON 응답만 반환
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'user.authentication.CookieJWTAuthentication',  # ✅ JWT 토큰을 쿠키에서 가져오는 인증 방식 추가
     ),
 }
+
 
 
 CACHES = {
@@ -140,4 +145,15 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",  # 로컬 메모리 캐싱
         "LOCATION": "unique-snowflake",  # 캐시 구분을 위한 위치명
     }
+}
+
+AUTH_USER_MODEL = 'user.User'
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
