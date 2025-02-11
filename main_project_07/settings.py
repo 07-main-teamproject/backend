@@ -48,9 +48,11 @@ DJANGO_SYSTEM_APPS = [
 
 ]
 CUSTOM_USER_APPS = [
+    'diet',
     'user',
     'food',
     'common',
+    'dietfood',
     'rest_framework',
     'rest_framework_simplejwt',
 ]
@@ -99,6 +101,8 @@ DATABASES = {
         'PORT': os.getenv("DB_PORT"),
     }
 }
+
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
