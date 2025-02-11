@@ -29,7 +29,6 @@ class FoodInfoView(APIView):
             return Response({"error": "외부 API 요청 실패"}, status=status.HTTP_502_BAD_GATEWAY)
 
         if search_response.status_code == 200:
-            search_data = search_response.json()
             products = search_data.get("products", [])
 
             if products:
