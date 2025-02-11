@@ -100,11 +100,6 @@ DATABASES = {
     }
 }
 
-# 데이터베이스 환경 변수 확인 (누락된 값이 있으면 실행 중지)
-for key in ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
-    if not os.getenv(key):
-        raise ValueError(f"❌ ERROR: {key} is not set in the environment variables!")
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
