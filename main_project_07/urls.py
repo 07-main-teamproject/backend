@@ -20,8 +20,12 @@ from django.urls import path,include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/food/", include("food.urls")),
 
     path("api/user/",include("user.urls")),
+
+    path("api/food/", include("food.urls")), # 독립적인 음식 정보 API
+
+    path("api/diet/", include("diet.urls")), # 식단 관련 API  (dietfood도 여기서 포함됨)
+
 
 ]
