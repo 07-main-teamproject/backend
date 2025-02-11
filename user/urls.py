@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SignUpAPIView, LoginAPIView, LogoutAPIView, UserInfoAPIView
+from .views import SignUpAPIView, LoginAPIView, LogoutAPIView, UserInfoAPIView,ProfileView
 from django.http import JsonResponse
 
 # 기본 응답 뷰
@@ -20,4 +20,6 @@ urlpatterns = [
     path("login/", LoginAPIView.as_view(), name="login"),
     path("logout/", LogoutAPIView.as_view(), name="logout"),
     path('info/<int:pk>/', UserInfoAPIView.as_view(), name='user-info'),
+
+    path("profile/",ProfileView.as_view(), name='profile'),
 ]

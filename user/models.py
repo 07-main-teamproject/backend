@@ -46,16 +46,20 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
-# ✅ Profile 모델 추가
-class Profile(CommonModel):  # ✅ CommonModel을 상속받아 생성/수정 시간 자동 추가
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+
+class Profile(CommonModel):  # ✅ CommonModel을 상속하여 created_at, updated_at 자동 추가
+    user = models.OneToOneField("user.User", on_delete=models.CASCADE, related_name="profile")
+
+    # ✅ 프로필 기본 정보
     age = models.IntegerField(null=True, blank=True)
-    gender = models.CharField(max_length=10, null=True, blank=True)
-    height = models.FloatField(null=True, blank=True)
-    weight = models.FloatField(null=True, blank=True)
-    target_weight = models.FloatField(null=True, blank=True)
-    allergies = models.TextField(blank=True, null=True)  # ✅ 알레르기 정보 (선택 사항)
-    preferences = models.TextField(blank=True, null=True)  # ✅ 음식 선호도
+    gender = models.CharField(max_length=10, choices=[("M", "남성"), ("F", "여성"), ("O", "기타")], null=True, blank=True)
+    height = models.FloatField(null=True, blank=True)  # cm 단위
+    weight = models.FloatField(null=True, blank=True)  # kg 단위
+    target_weight = models.FloatField(null=True, blank=True)  # 목표 체중 (kg)
+
+    # ✅ 알레르기 및 음식 선호도
+    allergies = models.JSONField(default=list, blank=True, null=True)  # ✅ JSON 형태로 저장 (예: ["견과류", "글루텐"])
+    preferences = models.JSONField(default=list, blank=True, null=True)  # ✅ JSON 형태로 저장 (예: ["채식", "고기 기피"])
 
     def __str__(self):
         return f"{self.user.email}의 프로필"

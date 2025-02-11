@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
@@ -6,8 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth import authenticate
-from .models import User
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, UserUpdateSerializer
+from .models import User,Profile
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, UserUpdateSerializer, ProfileSerializer
 
 
 # 회원가입 api
@@ -51,7 +51,7 @@ class LoginAPIView(APIView):
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
-                secure=True,
+                secure=False,
                 samesite="Lax",
             )
 
@@ -80,7 +80,6 @@ class UserInfoAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        print(f"Requesting user with id: {pk}")
         # 본인 계정만 접근 가능하도록 제한
         if request.user.pk != pk:
             raise PermissionDenied('본인의 정보만 접근할 수 있습니다.')
@@ -91,7 +90,6 @@ class UserInfoAPIView(APIView):
         return Response(serializer.data)
 
     def put(self, request, pk):
-        print(f"Updating user with id: {pk}")
         # 본인 계정만 수정 가능하도록 제한
         if request.user.pk != pk:
             raise PermissionDenied('본인의 정보만 수정할 수 있습니다.')
@@ -112,3 +110,41 @@ class UserInfoAPIView(APIView):
         user = get_object_or_404(User, pk=pk)
         user.delete()
         return Response({"message": "Deleted successfully"}, status=200)
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    # ✅ 프로필 조회 (없으면 자동 생성)
+    def get(self, request):
+        profile, created = Profile.objects.get_or_create(user=request.user)  # ✅ 없으면 자동 생성!
+        return Response({
+            "age": profile.age,
+            "gender": profile.gender,
+            "height": profile.height,
+            "weight": profile.weight,
+            "target_weight": profile.target_weight,
+            "allergies": profile.allergies,
+            "preferences": profile.preferences
+        }, status=status.HTTP_200_OK)
+
+    # ✅ 프로필 수정
+    def put(self, request):
+        profile, created = Profile.objects.get_or_create(user=request.user)  # ✅ 없으면 자동 생성!
+        data = request.data
+
+        profile.age = data.get("age", profile.age)
+        profile.gender = data.get("gender", profile.gender)
+        profile.height = data.get("height", profile.height)
+        profile.weight = data.get("weight", profile.weight)
+        profile.target_weight = data.get("target_weight", profile.target_weight)
+        profile.allergies = data.get("allergies", profile.allergies)
+        profile.preferences = data.get("preferences", profile.preferences)
+
+        profile.save()
+        return Response({"message": "프로필이 수정되었습니다."}, status=status.HTTP_200_OK)
+
+    # ✅ 프로필 삭제
+    def delete(self, request):
+        profile = get_object_or_404(Profile, user=request.user)
+        profile.delete()
+        return Response({"message": "프로필이 삭제되었습니다."}, status=status.HTTP_200_OK)

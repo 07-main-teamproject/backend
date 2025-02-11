@@ -23,7 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User(
             email=validated_data["email"],
             name=validated_data["name"],
-            nickname=validated_data.get("nickname", "anonymous"),
+            nickname=validated_data.get("nickname"),
         )
         user.set_password(validated_data["password"])
         user.save()
@@ -43,10 +43,10 @@ class LoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(email=data['email'])  # 이메일로 사용자 검색
         except User.DoesNotExist:
-            raise serializers.ValidationError("이메일 또는 비밀번호가 잘못되었습니다.")
+            raise serializers.ValidationError("이메일이 잘못되었습니다.")
 
         if not check_password(data['password'], user.password):  # 비밀번호 검증
-            raise serializers.ValidationError("이메일 또는 비밀번호가 잘못되었습니다.")
+            raise serializers.ValidationError("비밀번호가 잘못되었습니다.")
 
         return user  # 검증된 사용자 반환
 
@@ -60,7 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "name", "nickname", "is_staff", "is_active"]  # ✅ Profile 추가
+        fields = ["id", "email", "name", "nickname"]  # ✅ Profile 추가
 
 
 # ✅ 회원 정보 수정 Serializer
@@ -68,3 +68,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["name", "nickname"]
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences"]
