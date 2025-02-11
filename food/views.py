@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework import status
 import requests
@@ -10,50 +11,53 @@ class FoodInfoView(APIView):
         if not query:
             return Response({"error": "음식 이름을 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # OpenFoodFacts 검색 API 호출
+        # 캐시에서 데이터 확인 (캐시 키 = 검색어)
+        cache_key = f"food_info_{query}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data, status=status.HTTP_200_OK)  # 캐싱된 데이터 반환
+
+        # 캐시에 없으면 OpenFoodFacts 검색 API 호출
         search_url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1"
-        search_response = requests.get(search_url)
+        try:
+            search_response = requests.get(search_url, timeout=20)  # 타임아웃  설정
+            search_response.raise_for_status()  # HTTP 오류 발생 시 예외 처리
+            search_data = search_response.json()
+        except requests.exceptions.Timeout:
+            return Response({"error": "외부 API 응답이 너무 느립니다."}, status=status.HTTP_504_GATEWAY_TIMEOUT)
+        except requests.exceptions.RequestException:
+            return Response({"error": "외부 API 요청 실패"}, status=status.HTTP_502_BAD_GATEWAY)
 
         if search_response.status_code == 200:
             search_data = search_response.json()
             products = search_data.get("products", [])
+
             if products:
-                product = products[0]  # 첫 번째 검색 결과 사용
+                food_list = []
 
-                # 알레르기 관련 태그들 (중복 확인)
-                allergens = product.get("allergens_tags", [])
-                traces = product.get("traces_tags", [])
-                categories = product.get("categories_tags", [])
-                ingredients = product.get("ingredients_tags", [])
+                # 최대 3개의 유사한 음식 반환
+                for product in products[:3]:
+                    food_data = {
+                        "id": product.get("code", None),
+                        "name": product.get("product_name", query),
+                        "calories": product.get("nutriments", {}).get("energy-kcal", 0),
+                        "protein": product.get("nutriments", {}).get("proteins", 0),
+                        "carbs": product.get("nutriments", {}).get("carbohydrates", 0),
+                        "fat": product.get("nutriments", {}).get("fat", 0),
 
-                return Response({
-                    "id": product.get("code", None),
-                    "name": product.get("product_name", query),
-                    "calories": product.get("nutriments", {}).get("energy-kcal", 0),
-                    "protein": product.get("nutriments", {}).get("proteins", 0),
-                    "carbs": product.get("nutriments", {}).get("carbohydrates", 0),
-                    "fat": product.get("nutriments", {}).get("fat", 0),
+                        # `nuts`, `gluten`, `dairy` 포함 여부 확인
+                        "contains_nuts": "en:nuts" in product.get("ingredients_tags", []) or "en:nuts" in product.get("categories_tags", []) or "en:nuts" in product.get("allergens_tags", []) or "en:nuts" in product.get("traces_tags", []),
+                        "contains_gluten": "en:gluten" in product.get("ingredients_tags",[]) or "en:gluten" in product.get("categories_tags", []) or "en:gluten" in product.get("allergens_tags",[]) or "en:gluten" in product.get("traces_tags", []),
+                        "contains_dairy": "en:dairy" in product.get("ingredients_tags",[]) or "en:dairy" in product.get("categories_tags",[]) or "en:dairy" in product.get("allergens_tags", []) or "en:dairy" in product.get("traces_tags", []),
 
-                    #  `nuts`, `gluten`, `dairy` 포함 여부 확인 (여러 필드 검사)
-                    "contains_nuts": (
-                            "en:nuts" in ingredients or
-                            "en:nuts" in categories or
-                            "en:nuts" in allergens or
-                            "en:nuts" in traces
-                    ),
-                    "contains_gluten": (
-                            "en:gluten" in ingredients or
-                            "en:gluten" in categories or
-                            "en:gluten" in allergens or
-                            "en:gluten" in traces
-                    ),
-                     "contains_dairy": (
-                        "en:dairy" in ingredients or
-                        "en:dairy" in categories or
-                        "en:dairy" in allergens or
-                        "en:dairy" in traces
-                    )
-                }, status=status.HTTP_200_OK)
+                        # 음식 카테고리 및 태그 추가 (기존 food-tags 기능 포함)
+                        "categories": product.get("categories_tags", []),
+                        "tags": product.get("ingredients_tags", []),
+                    }
+                    food_list.append(food_data)
+                # 캐시에 데이터 저장 (60분 = 3600초)
+                cache.set(cache_key, food_list, timeout=3600)
+
+                return Response(food_list, status=status.HTTP_200_OK)
 
         return Response({"error": "음식을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-
