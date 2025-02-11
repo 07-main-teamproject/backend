@@ -52,6 +52,7 @@ CUSTOM_USER_APPS = [
     'food',
     'common',
     'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 INSTALLED_APPS = DJANGO_SYSTEM_APPS + CUSTOM_USER_APPS
@@ -99,11 +100,6 @@ DATABASES = {
     }
 }
 
-# 데이터베이스 환경 변수 확인 (누락된 값이 있으면 실행 중지)
-for key in ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
-    if not os.getenv(key):
-        raise ValueError(f"❌ ERROR: {key} is not set in the environment variables!")
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -130,7 +126,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',  # JSON 응답만 반환하도록 설정
+        'rest_framework.renderers.JSONRenderer',  # ✅ JSON 응답만 반환
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'user.authentication.CookieJWTAuthentication',  # ✅ JWT 토큰을 쿠키에서 가져오는 인증 방식 추가
     ),
 }
 
@@ -140,3 +139,16 @@ CACHES = {
         "LOCATION": "unique-snowflake",  # 캐시 구분을 위한 위치명
     }
 }
+
+
+AUTH_USER_MODEL = 'user.User'
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+

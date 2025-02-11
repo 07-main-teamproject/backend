@@ -18,6 +18,8 @@ services:
     build: .
     container_name: diet-django-web
     restart: always
+    ports:
+      - "8000:8000"
     depends_on:
       - db
     env_file:
@@ -25,7 +27,6 @@ services:
     volumes:
       - .:/app
       - ./staticfiles:/app/staticfiles
-    command: [ "gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application" ]
 
 
   nginx:

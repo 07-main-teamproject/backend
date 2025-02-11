@@ -1,4 +1,4 @@
-FROM python:3.12-alpine3.20
+FROM python:3.13-alpine3.20
 
 # 2. 작업 디렉토리 설정
 WORKDIR /app
