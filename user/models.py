@@ -49,7 +49,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Profile(CommonModel):
     VALID_ALLERGIES = ["유제품", "글루텐", "견과류"]
-    VALID_PREFERENCES = ["채식", "비건", "저탄수화물", "고단백"]
+    VALID_PREFERENCES = ["채식", "비건", "저염식", "고단백"]
 
     user = models.OneToOneField("user.User", on_delete=models.CASCADE, related_name="profile")
     age = models.IntegerField(null=True, blank=True)
