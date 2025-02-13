@@ -1,109 +1,121 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.cache import cache
-from django.shortcuts import get_object_or_404
 from .models import Diet
+from food.models import Food
 from dietfood.models import DietFood
 from .serializers import DietSerializer
-from dietfood.serializers import DietFoodSerializer
-class DietView(APIView):
-    permission_classes = [IsAuthenticated] # 로그인한 사용자만 접근 가능
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 
-    """ 식단 API (자동 설정 + 직접 선택) """
-    def post(self, request):
-        user = request.user # 현재 요청을 보낸 사용자
-        input_name = request.data.get('name') # 사용자가 입력한 식단 이름 (없으면 자동 설정)
+class DietListView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        existing_diets = Diet.objects.filter(user=user).count() # 사용자의 기존 식단 개수를 확인해 기본 이름을 자동 설정할 때 사용
-
-        # 기본 식단 이름 추천 (자동 설정), 3개 이상 식단을 만들었다면 추가 식단1,2 처럼 이름을 설정
-        meal_names = ["아침 식단", "점심 식단", "저녁 식단"]
-        default_name = meal_names[existing_diets] if existing_diets < 3 else f"추가 식단 {existing_diets - 2}"
-
-
-        diet_name = input_name if input_name else default_name # 사용자가 입력한 값이 있으면 input_name 없으면 자동 설정된 default_name사용
-
-
-        diet = Diet.objects.create(user=user, name=diet_name) # 새로운 식단 생성 DB에 저장됨
-
-        return Response({"message": f"새로운 '{diet_name}'이 생성되었습니다.", "diet_id": diet.id}, status=status.HTTP_201_CREATED) # 성공적으로 식단이 생성되었음을 응답
-
-    """ 전체 식단 목록 조회 & 특정 식단 상세 조회 API """
     def get(self, request):
-        diet_id = request.query_params.get("diet_id")  # URL에서 사용자가 조회하려는`diet_id`를 가져옴
+        diets = Diet.objects.filter(user=request.user)  # 사용자의 식단만 조회
+        serializer = DietSerializer(diets, many=True)  # 직렬화
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        if diet_id:  # 사용자가 특정 diet_id를 조회하는 경우 실행
-            cache_key = f"diet_info_{diet_id}"  # 캐시 키를 diet_info_1처럼 생성
-            cached_data = cache.get(cache_key)  # 이전에 조회한 데이터가 캐시에 저장되어 있다면 가져옴
-            if cached_data:
-                return Response(cached_data, status=status.HTTP_200_OK) # 캐쉬 데이터 반환
+class DietCreateView(APIView):
+    permission_classes = [IsAuthenticated]
 
-            diet = get_object_or_404(Diet, id=diet_id, user=request.user) # DB에서 조회 + 404 자동 처리 (캐시에 없을 경우)
+    def post(self, request):
+        # 사용자의 프로필 정보를 가져오기
+        profile = request.user.profile
 
-            # 해당 식단의 모든 음식 가져와서 총 영양소 계산
-            foods = DietFood.objects.filter(diet=diet)
-            total_calories = sum(food.calories for food in foods) # 모든 음식의 칼로리를 더함
-            total_protein = sum(food.protein for food in foods)   # 모든 음식의 단백지를 더함
-            total_carbs = sum(food.carbs for food in foods)       # 모든 음식의 탄수화물을 더함
-            total_fat = sum(food.fat for food in foods)           # 모든 음식의 지방을 더함
+        # 알레르기 및 선호도 정보 가져오기
+        allergies = profile.allergies
+        preferences = profile.preferences
 
-            # 응답 데이터 구성
-            response_data = {
-                "diet_id": diet.id,    # 식단의 고유 id
-                "name": diet.name,     # 식단 이름 (예:아침 식단)
-                "total_calories": total_calories, # 계산된 총 칼로리
-                "total_protein": total_protein,   # 계산된 총 단백질
-                "total_carbs": total_carbs,       # 계산된 총 탄수화물
-                "total_fat": total_fat,           # 계산된 총 지방
-                "image_url": diet.image_url,      # 식단의 이미지 (없으면 null)
-                "foods": DietFoodSerializer(foods, many=True).data  # 이 식단에 포함된 음식 목록
-            }
+        # 기본적으로 "아침 식단", "점심 식단", "저녁 식단"을 자동으로 제공
+        default_diets = [
+            {"name": "아침 식단", "user": request.user.id},
+            {"name": "점심 식단", "user": request.user.id},
+            {"name": "저녁 식단", "user": request.user.id}
+        ]
 
+        # 선호도 및 알레르기 조건에 맞는 음식 필터링
+        foods_to_include = Food.objects.all()  # 기본적으로 모든 음식
 
-            cache.set(cache_key, response_data, timeout=3600)  # 캐시에 저장 (60분 동안 유지), DB를 거치지 않고 빠르게 응답
+        # 선호도 필터링
+        if preferences:
+            for preference in preferences:
+                foods_to_include = foods_to_include.filter(tags__contains=preference)
 
-            return Response(response_data, status=status.HTTP_200_OK)  # 특정 식단 정보를 정상적으로 반환
+        # 알레르기 필터링
+        if allergies:
+            for allergy in allergies:
+                if allergy == "견과류":
+                    foods_to_include = foods_to_include.exclude(contains_nuts=True)
+                elif allergy == "글루텐":
+                    foods_to_include = foods_to_include.exclude(contains_gluten=True)
+                elif allergy == "유제품":
+                    foods_to_include = foods_to_include.exclude(contains_dairy=True)
 
-            # 전체 식단 목록 조회 (diet_id 없이 요청한 경우)
-        diets = Diet.objects.filter(user=request.user).order_by("-created_at")  # 현재 사용자가 가지고 있는 모든 식단을 최신순으로 정렬
-        return Response(DietSerializer(diets, many=True).data, status=status.HTTP_200_OK) # 사용자의 모든 식단을 반환
+        created_diets = []  # 모든 생성된 식단 정보를 저장할 리스트
 
-    """ 특정 식단 이름 수정 API """
-    def patch(self, request):
-        # 사용자가 수정학 식단 id와 새로운 식단 이름을 요청에서 가져옴
-        diet_id = request.query_params.get("diet_id")
-        new_name = request.data.get("name")
+        # 식단들을 저장
+        for data in default_diets:
+            serializer = DietSerializer(data=data)
+            if serializer.is_valid():
+                diet = serializer.save()
 
-        # diet_id 또는 name이 없을 경우 에러 반환
-        if not diet_id or not new_name:
-            return Response({"error": "diet_id와 name을 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
+                # 기본적으로 식단에 음식 추가 (선택된 음식에서 랜덤으로 4개 추가)
+                foods_for_diet = foods_to_include[:4]  # 예시: 4개의 음식을 추가
+                for food in foods_for_diet:
+                    DietFood.objects.create(diet=diet, food=food, portion_size=100)  # 기본적으로 100g으로 설정
 
-        diet = get_object_or_404(Diet, id=diet_id, user=request.user) # DB에서 해당 diet_id와 user가 일치하는 식단을 가져옴, 데이터가 없으면 자동으로 404응답 반환
-        diet.name = new_name  # 식단의 name 값을 새로운 값으로 변경
-        diet.save()           # 변경된 데이터를 DB에 저장
-        cache.delete(f"diet_info_{diet_id}") # 캐시 삭제 (최신 데이터 유지)
+                created_diets.append(serializer.data)  # 생성된 식단을 리스트에 추가
 
-        return Response({"message": "식단 이름이 수정되었습니다.", "diet_id": diet.id, "new_name": diet.name}, status=status.HTTP_200_OK) # 성공 메시지와 수정된 식단id, 변경된 식단 이름 반환
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    """ 특정 식단 삭제 API """
-    def delete(self, request):
-        diet_id = request.query_params.get("diet_id") # 삭제하려는 diet_id 가져옴
+        # 모든 생성된 식단 반환
+        return Response({"detail": "기본 식단이 생성되었습니다.", "diets": created_diets}, status=status.HTTP_201_CREATED)
 
-        # diet_id가 없을 경우 에러 반환
-        if not diet_id:
-            return Response({"error": "diet_id를 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
+class DietUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        diet = get_object_or_404(Diet, id=diet_id, user=request.user) # DB에서 해당 diet_id와 user가 일치하는 식단을 가져옴, 데이터가 없으면 자동으로 404응답 반환
-        diet.delete() # 해당 식단 DB에서 삭제
-        cache.delete(f"diet_info_{diet_id}") # 캐시 삭제 (최신 데이터 유지)
+    def put(self, request, diet_id):
+        # 식단 확인 (사용자가 만든 식단인지 확인)
+        try:
+            diet = Diet.objects.get(id=diet_id, user=request.user)
+        except Diet.DoesNotExist:
+            raise NotFound("식단을 찾을 수 없습니다.")
 
-        return Response({"message": "식단이 삭제되었습니다.", "diet_id": diet_id}, status=status.HTTP_200_OK) # 성공 메시지와 삭제된 식단 id반환
+        # 요청된 데이터에서 음식 정보 얻기
+        external_ids_to_add = request.data.get('add_foods', [])  # 외부 음식 ID 추가 요청
+        external_ids_to_remove = request.data.get('remove_foods', [])  # 외부 음식 ID 제거 요청
 
+        # 음식 추가
+        for external_id in external_ids_to_add:
+            try:
+                food = Food.objects.get(external_id=external_id)  # external_id를 기반으로 조회
+                DietFood.objects.create(diet=diet, food=food, portion_size=100)  # 기본적으로 100g으로 설정
+            except Food.DoesNotExist:
+                return Response({"detail": f"음식 외부 ID {external_id}를 찾을 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 음식 제거
+        for external_id in external_ids_to_remove:
+            try:
+                diet_food = DietFood.objects.get(diet=diet, food__external_id=external_id)  # external_id를 기반으로 조회
+                diet_food.delete()
+            except DietFood.DoesNotExist:
+                return Response({"detail": f"식단에서 해당 음식({external_id})을 찾을 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 수정된 식단 정보 반환
+        updated_diet = Diet.objects.get(id=diet_id, user=request.user)
+        serializer = DietSerializer(updated_diet)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+class DietDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
 
-
-
+    def delete(self, request, diet_id):
+        # 식단 확인 (사용자가 만든 식단인지 확인)
+        try:
+            diet = Diet.objects.get(id=diet_id, user=request.user)
+            diet.delete()  # 식단 삭제
+            return Response({"detail": "식단이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        except Diet.DoesNotExist:
+            raise NotFound("식단을 찾을 수 없습니다.")

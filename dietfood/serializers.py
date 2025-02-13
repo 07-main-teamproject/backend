@@ -1,11 +1,10 @@
 from rest_framework import serializers
 from .models import DietFood
+from food.serializers import FoodSerializer  # Food 시리얼라이저 임포트
 
 class DietFoodSerializer(serializers.ModelSerializer):
+    food = FoodSerializer()  # food를 포함하여 상세 정보도 직렬화
+
     class Meta:
         model = DietFood
-        fields = [
-            "id", "diet", "external_food_id", "name", "calories",
-            "protein", "carbs", "fat", "quantity", "unit", "contains_nuts",
-            "contains_gluten", "contains_dairy", "created_at" , "updated_at"
-        ]  #  JSON 응답에 포함할 필드 지정
+        fields = ['diet', 'food', 'portion_size']  # 음식, 식단, 양
