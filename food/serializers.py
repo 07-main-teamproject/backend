@@ -4,4 +4,4 @@ from .models import Food
 class FoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Food
-        fields = "__all__"  # 모든 필드를 자동 변환
+        fields = ['id', 'name', 'calories', 'protein', 'carbs', 'fat', 'contains_nuts', 'contains_gluten', 'contains_dairy']
