@@ -16,6 +16,7 @@ class DietListView(APIView):
         serializer = DietSerializer(diets, many=True)  # 직렬화
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class DietCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -24,8 +25,8 @@ class DietCreateView(APIView):
         profile = request.user.profile
 
         # 알레르기 및 선호도 정보 가져오기
-        allergies = profile.allergies
-        preferences = profile.preferences
+        allergies = profile.allergies if profile.allergies else []
+        preferences = profile.preferences if profile.preferences else []
 
         # 기본적으로 "아침 식단", "점심 식단", "저녁 식단"을 자동으로 제공
         default_diets = [
@@ -34,38 +35,63 @@ class DietCreateView(APIView):
             {"name": "저녁 식단", "user": request.user.id}
         ]
 
-        # 선호도 및 알레르기 조건에 맞는 음식 필터링
-        foods_to_include = Food.objects.all()  # 기본적으로 모든 음식
+        # 모든 음식 가져오기
+        foods_to_include = Food.objects.all()
 
-        # 선호도 필터링
+        # 음식 선호도 필터링 (라벨 기반)
         if preferences:
+            filtered_foods = Food.objects.none()  # 빈 쿼리셋 생성 (선호도 필터에 맞는 음식만 선택)
+
             for preference in preferences:
-                foods_to_include = foods_to_include.filter(tags__contains=preference)
+                if preference == "채식":
+                    filtered_foods |= foods_to_include.filter(labels__icontains="en:vegetarian")
+                elif preference == "비건":
+                    filtered_foods |= foods_to_include.filter(labels__icontains="en:vegan")
+                elif preference == "고단백":
+                    filtered_foods |= foods_to_include.filter(labels__icontains="en:high-protein")
+                elif preference == "저염식":
+                    filtered_foods |= foods_to_include.filter(labels__icontains="en:low-salt")
 
-        # 알레르기 필터링
-        if allergies:
-            for allergy in allergies:
-                if allergy == "견과류":
-                    foods_to_include = foods_to_include.exclude(contains_nuts=True)
-                elif allergy == "글루텐":
-                    foods_to_include = foods_to_include.exclude(contains_gluten=True)
-                elif allergy == "유제품":
-                    foods_to_include = foods_to_include.exclude(contains_dairy=True)
+            foods_to_include = filtered_foods.distinct()  # 중복 제거 후 필터링된 음식 목록 설정
 
-        created_diets = []  # 모든 생성된 식단 정보를 저장할 리스트
+        # 알레르기 필터링 (포함된 음식 제거)
+        if "견과류" in allergies:
+            foods_to_include = foods_to_include.exclude(contains_nuts=True)
+        if "글루텐" in allergies:
+            foods_to_include = foods_to_include.exclude(contains_gluten=True)
+        if "유제품" in allergies:
+            foods_to_include = foods_to_include.exclude(contains_dairy=True)
 
-        # 식단들을 저장
+        created_diets = []  # 생성된 식단 저장
+
+        # 식단 자동 생성 (기본 3개: 아침, 점심, 저녁)
         for data in default_diets:
             serializer = DietSerializer(data=data)
             if serializer.is_valid():
                 diet = serializer.save()
 
-                # 기본적으로 식단에 음식 추가 (선택된 음식에서 랜덤으로 4개 추가)
-                foods_for_diet = foods_to_include[:4]  # 예시: 4개의 음식을 추가
-                for food in foods_for_diet:
-                    DietFood.objects.create(diet=diet, food=food, portion_size=100)  # 기본적으로 100g으로 설정
+                # 필터링된 음식 중 최대 4개 선택
+                foods_for_diet = list(foods_to_include[:4])
 
-                created_diets.append(serializer.data)  # 생성된 식단을 리스트에 추가
+                # 4개 미만이면 전체 음식에서 추가로 선택
+                if len(foods_for_diet) < 4:
+                    remaining_foods = list(
+                        Food.objects.exclude(id__in=[food.id for food in foods_for_diet])[:4 - len(foods_for_diet)])
+                    foods_for_diet.extend(remaining_foods)
+
+                # 음식이 1개도 없을 경우 예외 처리 (식단 생성을 중단)
+                if not foods_for_diet:
+                    diet.delete()  # 생성된 빈 식단 삭제
+                    return Response(
+                        {"detail": "필터링된 음식이 없습니다. 음식 선호도 또는 알레르기 설정을 확인하세요."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # 식단에 음식 추가
+                for food in foods_for_diet:
+                    DietFood.objects.create(diet=diet, food=food, portion_size=100)  # 기본 100g 설정
+
+                created_diets.append(DietSerializer(diet).data)  # 직렬화된 데이터 저장
 
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

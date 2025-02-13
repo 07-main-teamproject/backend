@@ -12,7 +12,7 @@ class Food(CommonModel):
     contains_gluten = models.BooleanField(default=False)
     contains_dairy = models.BooleanField(default=False)
     tags = models.JSONField(default=list, blank=True, null=True)
-
+    labels = models.JSONField(default=list, blank=True, null=True)
 
 
     def __str__(self):
