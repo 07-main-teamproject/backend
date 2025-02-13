@@ -137,13 +137,14 @@ REST_FRAMEWORK = {
     ),
 }
 
+
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",  # 로컬 메모리 캐싱
         "LOCATION": "unique-snowflake",  # 캐시 구분을 위한 위치명
     }
 }
-
 
 AUTH_USER_MODEL = 'user.User'
 
@@ -155,4 +156,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 

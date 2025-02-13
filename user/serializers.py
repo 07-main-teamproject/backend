@@ -69,7 +69,29 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = ["name", "nickname"]
 
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences"]
+        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences","image"]
+
+    # ✅ 알레르기 유효성 검사
+    def validate_allergies(self, value):
+        VALID_ALLERGIES = Profile.VALID_ALLERGIES
+        if not isinstance(value, list):
+            raise serializers.ValidationError("알레르기는 리스트 형태여야 합니다.")
+        invalid_values = [item for item in value if item not in VALID_ALLERGIES]
+        if invalid_values:
+            raise serializers.ValidationError(f"유효하지 않은 알레르기 값: {invalid_values}")
+        return value
+
+    # ✅ 음식 선호도 유효성 검사
+    def validate_preferences(self, value):
+        VALID_PREFERENCES = Profile.VALID_PREFERENCES
+        if not isinstance(value, list):
+            raise serializers.ValidationError("음식 선호도는 리스트 형태여야 합니다.")
+        invalid_values = [item for item in value if item not in VALID_PREFERENCES]
+        if invalid_values:
+            raise serializers.ValidationError(f"유효하지 않은 음식 선호도 값: {invalid_values}")
+        return value
