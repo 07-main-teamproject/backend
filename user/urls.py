@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import SignUpAPIView, LoginAPIView, LogoutAPIView, UserInfoAPIView,ProfileView
 from django.http import JsonResponse
+from .social import GoogleLoginAPIView, KakaoLoginAPIView, NaverLoginAPIView
 
 # 기본 응답 뷰
 def users_root(request):
@@ -22,4 +23,9 @@ urlpatterns = [
     path('info/<int:pk>/', UserInfoAPIView.as_view(), name='user-info'),
 
     path("profile/",ProfileView.as_view(), name='profile'),
+
+# ✅ 소셜 로그인 추가
+    path("social/google/", GoogleLoginAPIView.as_view(), name="google-login"),
+    path("social/kakao/", KakaoLoginAPIView.as_view(), name="kakao-login"),
+    path("social/naver/", NaverLoginAPIView.as_view(), name="naver-login"),
 ]
