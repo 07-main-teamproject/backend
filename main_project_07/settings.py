@@ -160,3 +160,9 @@ SIMPLE_JWT = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+import os
+
+# Gunicorn 타임아웃 설정
+os.environ.setdefault("GUNICORN_CMD_ARGS", "--timeout 60")
+
+

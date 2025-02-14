@@ -34,7 +34,7 @@ class FoodInfoView(APIView):
                 "contains_dairy": food_in_db.contains_dairy,
                 "categories": food_in_db.categories,  # 카테고리 태그 추가
                 "tags": food_in_db.tags,  # 성분 태그 추가
-                "labels": food_in_db.labels  #  라벨 데이터 포함
+                "labels": food_in_db.labels  # 라벨 데이터 포함
             }
             return Response(food_data, status=status.HTTP_200_OK)
 
@@ -68,24 +68,31 @@ class FoodInfoView(APIView):
                     "contains_dairy": "en:dairy" in product.get("ingredients_tags", []) or "en:dairy" in product.get("categories_tags", []) or "en:dairy" in product.get("allergens_tags", []) or "en:dairy" in product.get("traces_tags", []),
                     "categories": product.get("categories_tags", []),  # 카테고리 태그
                     "tags": product.get("ingredients_tags", []),      # 성분 태그
-                    "labels": product.get("labels_tags", [])  #  라벨 데이터 추가
+                    "labels": product.get("labels_tags", [])  # 라벨 데이터 추가
                 }
 
                 # 외부에서 가져온 데이터를 DB에 저장 (새로운 음식 객체로 생성)
-                new_food = Food.objects.create(
+                food, created = Food.objects.update_or_create(
                     external_id=food_data["external_id"],
-                    name=food_data["name"],
-                    calories=food_data["calories"],
-                    protein=food_data["protein"],
-                    carbs=food_data["carbs"],
-                    fat=food_data["fat"],
-                    contains_nuts=food_data["contains_nuts"],
-                    contains_gluten=food_data["contains_gluten"],
-                    contains_dairy=food_data["contains_dairy"],
-                    tags=food_data["tags"],
-                    categories=food_data["categories"],
-                    labels=food_data["labels"]  #  라벨 저장
+                    defaults={
+                        'name': food_data["name"],
+                        'calories': food_data["calories"],
+                        'protein': food_data["protein"],
+                        'carbs': food_data["carbs"],
+                        'fat': food_data["fat"],
+                        'contains_nuts': food_data["contains_nuts"],
+                        'contains_gluten': food_data["contains_gluten"],
+                        'contains_dairy': food_data["contains_dairy"],
+                        'categories': food_data["categories"],
+                        'tags': food_data["tags"],
+                        'labels': food_data["labels"]  # 라벨 저장
+                    }
                 )
+
+                if created:
+                    print(f"[DB 저장 성공] 음식 추가됨: {food.name}")
+                else:
+                    print(f"[DB 존재] 기존 음식 업데이트됨: {food.name}")
 
                 return Response(food_data, status=status.HTTP_200_OK)
 

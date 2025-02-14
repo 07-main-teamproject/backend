@@ -1,103 +1,172 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import DietFood, Diet
 from food.models import Food
-from .serializers import DietFoodSerializer
 from rest_framework.permissions import IsAuthenticated
+
+
+from decimal import Decimal
 
 class DietFoodAddView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, diet_id):
-        # diet_id로 식단을 확인
-        try:
-            diet = Diet.objects.get(id=diet_id, user=request.user)
-        except Diet.DoesNotExist:
-            return Response({"detail": "식단을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        """음식 단일 추가 및 대량 추가 (이미 존재하면 양만 수정, 영양소 업데이트 포함)"""
+        diet = get_object_or_404(Diet, id=diet_id, user=request.user)
+        external_ids = request.data.get("external_ids", [])
+        portion_size = request.data.get("portion_size", 100)
+        merge_quantity = request.data.get("merge_quantity", False)  # 기존 양에 더하는 옵션
 
-        # 요청에서 음식 ID와 수량을 받음
-        external_id = request.data.get('external_id')  # 음식 ID
-        portion_size = request.data.get('portion_size', 100)  # 기본 양 100g로 설정 (그램 단위)
-
-        # 양이 0 이하일 경우 오류 처리
+        if not external_ids:
+            return Response({"detail": "추가할 음식 ID가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
         if portion_size <= 0:
             return Response({"detail": "양은 0보다 커야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            food = Food.objects.get(external_id=external_id)
-        except Food.DoesNotExist:
-            return Response({"detail": "음식을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        added_foods = []
 
-        # DietFood 객체 생성
-        diet_food, created = DietFood.objects.get_or_create(
-            diet=diet,
-            food=food,
-            defaults={'portion_size': portion_size}  # 양을 portion_size로 저장
-        )
+        for external_id in external_ids:
+            food = Food.objects.filter(external_id=external_id).first()
+            if not food:
+                return Response({"detail": f"음식 ID {external_id}를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
-        if not created:
-            # 이미 식단에 음식이 존재하면 양만 업데이트
-            diet_food.portion_size = portion_size
+            diet_food, created = DietFood.objects.get_or_create(
+                diet=diet, food=food, defaults={"portion_size": portion_size}
+            )
+
+            if not created:
+                if merge_quantity:
+                    diet_food.portion_size += portion_size  # 기존 양에 추가
+                else:
+                    diet_food.portion_size = portion_size  # 기존 양을 덮어씀
+
+            # **영양소 업데이트 (Decimal 변환 추가)**
+            diet_food.calories = Decimal(str(food.calories)) * (diet_food.portion_size / 100)
+            diet_food.protein = Decimal(str(food.protein)) * (diet_food.portion_size / 100)
+            diet_food.carbs = Decimal(str(food.carbs)) * (diet_food.portion_size / 100)
+            diet_food.fat = Decimal(str(food.fat)) * (diet_food.portion_size / 100)
+
             diet_food.save()
 
-        # 직렬화하여 응답
-        serializer = DietFoodSerializer(diet_food)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            added_foods.append({
+                "external_id": external_id,
+                "portion_size": diet_food.portion_size,
+                "calories": diet_food.calories,
+                "protein": diet_food.protein,
+                "carbs": diet_food.carbs,
+                "fat": diet_food.fat
+            })
+
+        return Response({"detail": "음식이 추가되었습니다.", "added_foods": added_foods}, status=status.HTTP_201_CREATED)
+
 
 class DietFoodRemoveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, diet_id):
-        # diet_id로 식단을 확인
-        try:
-            diet = Diet.objects.get(id=diet_id, user=request.user)
-        except Diet.DoesNotExist:
-            return Response({"detail": "식단을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        """음식 단일 삭제 및 대량 삭제"""
+        diet = get_object_or_404(Diet, id=diet_id, user=request.user)
+        external_ids = request.data.get("external_ids", [])
 
-        # 요청에서 음식 ID를 받음
-        external_id = request.data.get('external_id')
+        if not external_ids:
+            return Response({"detail": "삭제할 음식 ID가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            food = Food.objects.get(external_id=external_id)
-        except Food.DoesNotExist:
-            return Response({"detail": "음식을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        deleted_foods = []
 
-        # DietFood 객체 삭제
-        try:
-            diet_food = DietFood.objects.get(diet=diet, food=food)
+        for external_id in external_ids:
+            food = Food.objects.filter(external_id=external_id).first()
+            if not food:
+                return Response({"detail": f"음식 ID {external_id}를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
+            diet_food = DietFood.objects.filter(diet=diet, food=food).first()
+            if not diet_food:
+                return Response({"detail": f"이 식단에 음식 ID {external_id}가 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
             diet_food.delete()
-            return Response({"detail": "음식이 식단에서 제거되었습니다."}, status=status.HTTP_204_NO_CONTENT)
-        except DietFood.DoesNotExist:
-            return Response({"detail": "이 식단에 해당 음식이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            deleted_foods.append({
+                "external_id": external_id,
+                "name": food.name
+            })
 
-class DietFoodUpdatePortion_sizeView(APIView):
+        return Response({"detail": "음식이 삭제되었습니다.", "deleted_foods": deleted_foods}, status=status.HTTP_200_OK)
+
+
+class DietFoodUpdatePortionSizeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, diet_id):
-        # diet_id로 식단을 확인
-        try:
-            diet = Diet.objects.get(id=diet_id, user=request.user)
-        except Diet.DoesNotExist:
-            return Response({"detail": "식단을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        """음식 양(포션) 수정 (대량 수정 & 개별 수정 가능, 영양소 업데이트 포함)"""
+        diet = get_object_or_404(Diet, id=diet_id, user=request.user)
 
-        # 요청에서 음식 ID와 수량을 받음
-        external_id = request.data.get('external_id')
-        portion_size = request.data.get('portion_size')
+        # 같은 양을 여러 개의 음식에 적용
+        external_ids = request.data.get("external_ids", [])
+        portion_size = request.data.get("portion_size")
 
-        try:
-            food = Food.objects.get(external_id=external_id)
-        except Food.DoesNotExist:
-            return Response({"detail": "음식을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        # 개별적으로 다른 양을 적용
+        updates = request.data.get("updates", [])
 
-        # DietFood 객체 수정
-        try:
-            diet_food = DietFood.objects.get(diet=diet, food=food)
+        if not external_ids and not updates:
+            return Response({"detail": "수정할 음식 ID와 수량이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_foods = []
+
+        # 같은 양을 여러 개에 적용
+        if external_ids and portion_size is not None:
+            if portion_size <= 0:
+                return Response({"detail": "양은 0보다 커야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+            for external_id in external_ids:
+                food = Food.objects.filter(external_id=external_id).first()
+                if not food:
+                    continue  # 존재하지 않는 음식은 무시
+
+                diet_food = DietFood.objects.filter(diet=diet, food=food).first()
+                if not diet_food:
+                    continue  # 해당 식단에 음식이 없으면 무시
+
+                diet_food.portion_size = portion_size
+                diet_food.calories = food.calories * (portion_size / 100)
+                diet_food.protein = food.protein * (portion_size / 100)
+                diet_food.carbs = food.carbs * (portion_size / 100)
+                diet_food.fat = food.fat * (portion_size / 100)
+                diet_food.save()
+
+                updated_foods.append({
+                    "external_id": external_id,
+                    "portion_size": diet_food.portion_size
+                })
+
+        # 개별 양 적용
+        for update in updates:
+            external_id = update.get("external_id")
+            portion_size = update.get("portion_size")
+
+            if portion_size is None or portion_size <= 0:
+                return Response({"detail": f"양은 0보다 커야 합니다. (ID: {external_id})"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            food = Food.objects.filter(external_id=external_id).first()
+            if not food:
+                continue  # 존재하지 않는 음식은 무시
+
+            diet_food = DietFood.objects.filter(diet=diet, food=food).first()
+            if not diet_food:
+                continue  # 해당 식단에 음식이 없으면 무시
+
             diet_food.portion_size = portion_size
+            diet_food.calories = food.calories * (portion_size / 100)
+            diet_food.protein = food.protein * (portion_size / 100)
+            diet_food.carbs = food.carbs * (portion_size / 100)
+            diet_food.fat = food.fat * (portion_size / 100)
             diet_food.save()
-            return Response({"detail": "음식 수량을 업데이트했습니다."}, status=status.HTTP_200_OK)
-        except DietFood.DoesNotExist:
-            return Response({"detail": "이 식단에 해당 음식이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+            updated_foods.append({
+                "external_id": external_id,
+                "portion_size": diet_food.portion_size
+            })
 
+        if not updated_foods:
+            return Response({"detail": "수정된 음식이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response({"detail": "음식의 양이 업데이트되었습니다.", "updated_foods": updated_foods}, status=status.HTTP_200_OK)
