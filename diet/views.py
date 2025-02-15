@@ -7,12 +7,8 @@ from food.models import Food
 from dietfood.models import DietFood
 from .serializers import DietSerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound
 import random
 import requests
-from django.core.cache import cache
-
-cache.clear()
 import logging
 
 logger = logging.getLogger(__name__)  # 로깅 설정
@@ -40,7 +36,6 @@ class DietDetailView(APIView):
 
 class DietCreateView(APIView):
     permission_classes = [IsAuthenticated]
-    import requests
 
     def fetch_food_from_external_api(self, query, max_foods=500, max_pages=10):
         """외부 API에서 검색한 음식 데이터 가져오기 (페이지네이션 적용)"""

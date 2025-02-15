@@ -5,8 +5,6 @@ from rest_framework import status
 from .models import DietFood, Diet
 from food.models import Food
 from rest_framework.permissions import IsAuthenticated
-
-
 from decimal import Decimal
 
 class DietFoodAddView(APIView):
