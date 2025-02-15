@@ -16,4 +16,5 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # 7. 실행 명령어 설정
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "--timeout", "300", "main_project_07.wsgi:application"]
+
