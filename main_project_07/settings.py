@@ -165,4 +165,7 @@ import os
 # Gunicorn 타임아웃 설정
 os.environ.setdefault("GUNICORN_CMD_ARGS", "--timeout 60")
 
+KAKAO_CLIENT_ID = "072d2d003b490b28d2f4e683471df7b8"
+KAKAO_REDIRECT_URI = "http://localhost:3000/callback"
+KAKAO_CLIENT_SECRET = ""  # 선택사항 (없어도 됨)
 
