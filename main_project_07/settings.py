@@ -97,7 +97,7 @@ DATABASES = {
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST") if os.getenv("RUNNING_IN_DOCKER") else "localhost",
+        'HOST': os.getenv("DB_HOST") if os.getenv("RUNNING_IN_DOCKER")=='True' else "localhost",
         'PORT': os.getenv("DB_PORT"),
     }
 }
