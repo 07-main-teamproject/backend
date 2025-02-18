@@ -40,10 +40,10 @@ class DietFoodAddView(APIView):
                     diet_food.portion_size = portion_size  # 기존 양을 덮어씀
 
             # **영양소 업데이트 (Decimal 변환 추가)**
-            diet_food.calories = Decimal(str(food.calories)) * (diet_food.portion_size / 100)
-            diet_food.protein = Decimal(str(food.protein)) * (diet_food.portion_size / 100)
-            diet_food.carbs = Decimal(str(food.carbs)) * (diet_food.portion_size / 100)
-            diet_food.fat = Decimal(str(food.fat)) * (diet_food.portion_size / 100)
+            diet_food.calories = food.calories * (diet_food.portion_size / 100.0)
+            diet_food.protein = food.protein * (diet_food.portion_size / 100.0)
+            diet_food.carbs = food.carbs * (diet_food.portion_size / 100.0)
+            diet_food.fat = food.fat * (diet_food.portion_size / 100.0)
 
             diet_food.save()
 
