@@ -76,16 +76,11 @@ class LogoutAPIView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserInfoAPIView(APIView):
+class MyUserInfoAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, pk):
-        # 본인 계정만 접근 가능하도록 제한
-        if request.user.pk != pk:
-            raise PermissionDenied('본인의 정보만 접근할 수 있습니다.')
-
-        # 사용자 정보 가져오기
-        user = get_object_or_404(User, pk=pk)
+    def get(self, request):
+        user = request.user  # 로그인한 사용자
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
