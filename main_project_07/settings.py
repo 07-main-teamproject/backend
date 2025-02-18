@@ -172,8 +172,8 @@ KAKAO_REDIRECT_URI = "http://localhost:3000/callback"
 KAKAO_CLIENT_SECRET = ""  # 선택사항 (없어도 됨)
 
 CORS_ALLOWED_ORIGINS = [
-    "127.0.0.1:5173",
-    "localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
 ]
 
 CORS_ALLOW_METHODS = (
@@ -193,4 +193,6 @@ CORS_ALLOW_HEADERS = (
     "x-csrftoken",
     "x-requested-with",
 )
+
+CORS_ALLOW_CREDENTIALS = True
 
