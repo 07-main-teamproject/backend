@@ -61,7 +61,7 @@ class LoginAPIView(APIView):
 
 # 로그아웃 api
 class LogoutAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근
+    permission_classes = [AllowAny]  # 인증된 사용자만 접근
 
     def post(self, request):
 
