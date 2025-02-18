@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SignUpAPIView, LoginAPIView, LogoutAPIView, UserInfoAPIView,ProfileView
+from .views import SignUpAPIView, LoginAPIView, LogoutAPIView, ProfileView, MyUserInfoAPIView
 from django.http import JsonResponse
 from .social import GoogleLoginAPIView, KakaoLoginAPIView, NaverLoginAPIView
 
@@ -20,7 +20,7 @@ urlpatterns = [
     path("signup/", SignUpAPIView.as_view(), name="signup"),
     path("login/", LoginAPIView.as_view(), name="login"),
     path("logout/", LogoutAPIView.as_view(), name="logout"),
-    path('info/<int:pk>/', UserInfoAPIView.as_view(), name='user-info'),
+    path('me/', MyUserInfoAPIView.as_view(), name='my-info'),
 
     path("profile/",ProfileView.as_view(), name='profile'),
 
