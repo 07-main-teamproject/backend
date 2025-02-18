@@ -44,15 +44,15 @@ class LoginAPIView(APIView):
                 key="access_token",
                 value=str(refresh.access_token),
                 httponly=True,
-                secure=True,  # HTTPS에서만 전송
-                samesite="Lax",
+                secure=False,
+                samesite="None",
             )
             response.set_cookie(
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite="None",
             )
 
             return response
