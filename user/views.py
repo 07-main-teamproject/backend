@@ -109,36 +109,26 @@ class MyUserInfoAPIView(APIView):
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
-    # ✅ 프로필 조회 (없으면 자동 생성)
     def get(self, request):
-        profile, created = Profile.objects.get_or_create(user=request.user)  # ✅ 없으면 자동 생성!
-        return Response({
-            "age": profile.age,
-            "gender": profile.gender,
-            "height": profile.height,
-            "weight": profile.weight,
-            "target_weight": profile.target_weight,
-            "allergies": profile.allergies,
-            "preferences": profile.preferences
-        }, status=status.HTTP_200_OK)
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # ✅ 프로필 수정
     def put(self, request):
-        profile, created = Profile.objects.get_or_create(user=request.user)  # ✅ 없으면 자동 생성!
-        data = request.data
+        profile, created = Profile.objects.get_or_create(user=request.user)
 
-        profile.age = data.get("age", profile.age)
-        profile.gender = data.get("gender", profile.gender)
-        profile.height = data.get("height", profile.height)
-        profile.weight = data.get("weight", profile.weight)
-        profile.target_weight = data.get("target_weight", profile.target_weight)
-        profile.allergies = data.get("allergies", profile.allergies)
-        profile.preferences = data.get("preferences", profile.preferences)
+        # ✅ 파일 때문에 request.data.copy() 필요!
+        data = request.data.copy()
+        if 'image' not in request.data:
+            data.pop('image', None)
 
-        profile.save()
-        return Response({"message": "프로필이 수정되었습니다."}, status=status.HTTP_200_OK)
+        serializer = ProfileSerializer(profile, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "프로필이 수정되었습니다."}, status=status.HTTP_200_OK)
 
-    # ✅ 프로필 삭제
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request):
         profile = get_object_or_404(Profile, user=request.user)
         profile.delete()

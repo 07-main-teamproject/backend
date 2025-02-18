@@ -53,14 +53,18 @@ class LoginSerializer(serializers.Serializer):
 
 
 
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences","image"]
 
 # ✅ 회원 정보 Serializer (Profile 정보 포함)
 class UserSerializer(serializers.ModelSerializer):
-    #profile = ProfileSerializer(read_only=True)  # ✅ User 조회 시 Profile 정보도 포함
+    profile = ProfileSerializer(read_only=True)  # ✅ User 조회 시 Profile 정보도 포함
 
     class Meta:
         model = User
-        fields = ["id", "email", "name", "nickname"]  # ✅ Profile 추가
+        fields = ["id", "email", "name", "nickname","profile"]  # ✅ Profile 추가
 
 
 # ✅ 회원 정보 수정 Serializer
@@ -71,10 +75,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences","image"]
+
 
     # ✅ 알레르기 유효성 검사
     def validate_allergies(self, value):
