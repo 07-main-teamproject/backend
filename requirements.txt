@@ -6,3 +6,4 @@ djangorestframework-simplejwt
 gunicorn>=20.1.0
 requests
 Pillow
+django-cors-headers

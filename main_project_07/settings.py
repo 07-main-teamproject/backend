@@ -39,6 +39,7 @@ if DEBUG:
 
 # Application definition
 DJANGO_SYSTEM_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -60,6 +61,7 @@ CUSTOM_USER_APPS = [
 INSTALLED_APPS = DJANGO_SYSTEM_APPS + CUSTOM_USER_APPS
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -168,4 +170,27 @@ os.environ.setdefault("GUNICORN_CMD_ARGS", "--timeout 60")
 KAKAO_CLIENT_ID = "072d2d003b490b28d2f4e683471df7b8"
 KAKAO_REDIRECT_URI = "http://localhost:3000/callback"
 KAKAO_CLIENT_SECRET = ""  # 선택사항 (없어도 됨)
+
+CORS_ALLOWED_ORIGINS = [
+    "127.0.0.1:5173",
+    "localhost:5173",
+]
+
+CORS_ALLOW_METHODS = (
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+)
+
+CORS_ALLOW_HEADERS = (
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+)
 
