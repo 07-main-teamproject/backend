@@ -39,7 +39,7 @@ class DietFoodAddView(APIView):
                 else:
                     diet_food.portion_size = portion_size  # 기존 양을 덮어씀
 
-            # **영양소 업데이트 (Decimal 변환 추가)**
+            # **영양소 업데**
             diet_food.calories = food.calories * (diet_food.portion_size / 100.0)
             diet_food.protein = food.protein * (diet_food.portion_size / 100.0)
             diet_food.carbs = food.carbs * (diet_food.portion_size / 100.0)
