@@ -1,5 +1,5 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .views import SignUpAPIView, LoginAPIView, LogoutAPIView, ProfileView, MyUserInfoAPIView
 from django.http import JsonResponse
@@ -22,6 +22,7 @@ urlpatterns = [
     path("signup/", SignUpAPIView.as_view(), name="signup"),
     path("login/", LoginAPIView.as_view(), name="login"),
     path("new_login/",TokenObtainPairView.as_view(), name="new_login"),
+    path("token_refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", LogoutAPIView.as_view(), name="logout"),
     path('me/', MyUserInfoAPIView.as_view(), name='my-info'),
 
