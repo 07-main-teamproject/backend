@@ -135,10 +135,12 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',  # ✅ JSON 응답만 반환
     ),
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'user.authentication.CookieJWTAuthentication',  # ✅ JWT 토큰을 쿠키에서 가져오는 인증 방식 추가
-    ),
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
+
 
 
 
