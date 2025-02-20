@@ -63,9 +63,18 @@ class ProfileSerializer(serializers.ModelSerializer):
     # ✅ 성별 변환 로직 추가
     def validate_gender(self, value):
         gender_map = {"남성": "M", "여성": "F", "기타": "O", "M": "M", "F": "F", "O": "O"}
+
+        # 혹시 모를 공백 제거 + 앞뒤 쌍따옴표 제거
+        value = value.strip().replace('"', '').replace("'", "")
+
         if value not in gender_map:
             raise serializers.ValidationError("성별은 '남성', '여성', '기타', 'M', 'F', 'O' 중 하나여야 합니다.")
         return gender_map[value]
+
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url  # 서버에 저장된 이미지 URL 반환
+        return None
 
     # ✅ 알레르기 유효성 검사
     def validate_allergies(self, value):
