@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from .models import User,Profile
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, UserUpdateSerializer, ProfileSerializer
+from django.core.files.base import ContentFile
+import base64
 
 
 # 회원가입 api
@@ -96,11 +98,6 @@ class ProfileView(APIView):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get(self, request):
-        profile, created = Profile.objects.get_or_create(user=request.user)
-        serializer = ProfileSerializer(profile)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
     # 프로필 수정
     def put(self, request):
         profile, created = Profile.objects.get_or_create(user=request.user)
@@ -108,7 +105,7 @@ class ProfileView(APIView):
         data = request.data.copy()
 
         # ✅ base64 이미지 처리 로직 추가
-        image_base64 = data.get('profileImage')
+        image_base64 = data.get('image')
         if image_base64:
             try:
                 format, imgstr = image_base64.split(';base64,')
