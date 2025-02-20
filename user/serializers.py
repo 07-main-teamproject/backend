@@ -58,6 +58,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences","image"]
 
+        def validate_gender(self, value):
+            gender_map = {"남성": "M", "여성": "F", "M": "M", "F": "F"}
+            if value not in gender_map:
+                raise serializers.ValidationError("성별은 '남성', '여성', 'M', 'F' 중 하나여야 합니다.")
+            return gender_map[value]
+
 # ✅ 회원 정보 Serializer (Profile 정보 포함)
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)  # ✅ User 조회 시 Profile 정보도 포함
