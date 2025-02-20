@@ -96,15 +96,33 @@ class ProfileView(APIView):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def get(self, request):
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # 프로필 수정
     def put(self, request):
         profile, created = Profile.objects.get_or_create(user=request.user)
 
-        # ✅ 파일 때문에 request.data.copy() 필요!
         data = request.data.copy()
-        if 'image' not in request.data:
-            data.pop('image', None)
+
+        # ✅ base64 이미지 처리 로직 추가
+        image_base64 = data.get('profileImage')
+        if image_base64:
+            try:
+                format, imgstr = image_base64.split(';base64,')
+                ext = format.split('/')[-1]
+                profile.image.save(
+                    f"profile_{request.user.id}.{ext}",
+                    ContentFile(base64.b64decode(imgstr)),
+                    save=False
+                )
+            except Exception as e:
+                return Response({"error": f"이미지 처리 중 오류 발생: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = ProfileSerializer(profile, data=data, partial=True)
+
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "프로필이 수정되었습니다."}, status=status.HTTP_200_OK)
