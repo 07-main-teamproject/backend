@@ -1,6 +1,9 @@
+import base64
+from django.core.files.base import ContentFile
 from rest_framework import serializers
-from .models import User,Profile
+from .models import User, Profile
 from django.contrib.auth.hashers import check_password
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -34,54 +37,35 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-# ✅ 로그인 Serializer
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         try:
-            user = User.objects.get(email=data['email'])  # 이메일로 사용자 검색
+            user = User.objects.get(email=data['email'])
         except User.DoesNotExist:
             raise serializers.ValidationError("이메일이 잘못되었습니다.")
 
-        if not check_password(data['password'], user.password):  # 비밀번호 검증
+        if not check_password(data['password'], user.password):
             raise serializers.ValidationError("비밀번호가 잘못되었습니다.")
 
-        return user  # 검증된 사용자 반환
-
-
+        return user
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    image = serializers.CharField(required=False)  # Base64 받을 수 있게 허용
+    gender = serializers.CharField()
     class Meta:
         model = Profile
-        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences","image"]
+        fields = ["age", "gender", "height", "weight", "target_weight", "allergies", "preferences", "image"]
 
-        def validate_gender(self, value):
-            gender_map = {"남성": "M", "여성": "F", "M": "M", "F": "F"}
-            if value not in gender_map:
-                raise serializers.ValidationError("성별은 '남성', '여성', 'M', 'F' 중 하나여야 합니다.")
-            return gender_map[value]
-
-# ✅ 회원 정보 Serializer (Profile 정보 포함)
-class UserSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(read_only=True)  # ✅ User 조회 시 Profile 정보도 포함
-
-    class Meta:
-        model = User
-        fields = ["id", "email", "name", "nickname","profile"]  # ✅ Profile 추가
-
-
-# ✅ 회원 정보 수정 Serializer
-class UserUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["name", "nickname"]
-
-
-
-
+    # ✅ 성별 변환 로직 추가
+    def validate_gender(self, value):
+        gender_map = {"남성": "M", "여성": "F", "기타": "O", "M": "M", "F": "F", "O": "O"}
+        if value not in gender_map:
+            raise serializers.ValidationError("성별은 '남성', '여성', '기타', 'M', 'F', 'O' 중 하나여야 합니다.")
+        return gender_map[value]
 
     # ✅ 알레르기 유효성 검사
     def validate_allergies(self, value):
@@ -102,3 +86,34 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if invalid_values:
             raise serializers.ValidationError(f"유효하지 않은 음식 선호도 값: {invalid_values}")
         return value
+
+    # ✅ update 메서드에서 Base64 이미지 처리 로직 추가
+    def update(self, instance, validated_data):
+        image_data = validated_data.pop('image', None)
+
+        if image_data:
+            try:
+                format, imgstr = image_data.split(';base64,')
+                ext = format.split('/')[-1]
+                instance.image.save(
+                    f"profile_{instance.user.id}.{ext}",
+                    ContentFile(base64.b64decode(imgstr)),
+                    save=False
+                )
+            except Exception as e:
+                raise serializers.ValidationError(f"이미지 처리 중 오류 발생: {str(e)}")
+
+        return super().update(instance, validated_data)
+
+class UserSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "name", "nickname", "profile"]
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["name", "nickname"]
