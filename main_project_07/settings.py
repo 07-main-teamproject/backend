@@ -177,6 +177,7 @@ KAKAO_CLIENT_SECRET = ""  # 선택사항 (없어도 됨)
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
+    "https://dietstory.shop"
 ]
 
 CORS_ALLOW_METHODS = (
