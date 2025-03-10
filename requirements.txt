@@ -2,4 +2,8 @@ Django>=5.1
 psycopg2-binary>=2.9.3
 python-dotenv>=1.0.0
 djangorestframework>=3.14.0
+djangorestframework-simplejwt
 gunicorn>=20.1.0
+requests
+Pillow
+django-cors-headers

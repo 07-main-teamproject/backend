@@ -1,4 +1,4 @@
-FROM python:3.12-alpine3.20
+FROM python:3.13-alpine3.20
 
 # 2. 작업 디렉토리 설정
 WORKDIR /app
@@ -16,4 +16,5 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # 7. 실행 명령어 설정
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "main_project_07.wsgi:application"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "--timeout", "300", "main_project_07.wsgi:application"]
+

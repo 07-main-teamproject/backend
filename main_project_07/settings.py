@@ -38,16 +38,31 @@ if DEBUG:
     print("🔍 DB_PORT:", os.getenv("DB_PORT"))
 
 # Application definition
-INSTALLED_APPS = [
+DJANGO_SYSTEM_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+]
+CUSTOM_USER_APPS = [
+    'diet',
+    'user',
+    'food',
+    'common',
+    'dietfood',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
+INSTALLED_APPS = DJANGO_SYSTEM_APPS + CUSTOM_USER_APPS
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -85,15 +100,12 @@ DATABASES = {
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST") if os.getenv("RUNNING_IN_DOCKER") else "localhost",
+        'HOST': os.getenv("DB_HOST") if os.getenv("RUNNING_IN_DOCKER")=='True' else "localhost",
         'PORT': os.getenv("DB_PORT"),
     }
 }
 
-# 데이터베이스 환경 변수 확인 (누락된 값이 있으면 실행 중지)
-for key in ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
-    if not os.getenv(key):
-        raise ValueError(f"❌ ERROR: {key} is not set in the environment variables!")
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -118,3 +130,73 @@ STATICFILES_DIRS = []
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',  # ✅ JSON 응답만 반환
+    ),
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",  # 로컬 메모리 캐싱
+        "LOCATION": "unique-snowflake",  # 캐시 구분을 위한 위치명
+    }
+}
+
+AUTH_USER_MODEL = 'user.User'
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+import os
+
+# Gunicorn 타임아웃 설정
+os.environ.setdefault("GUNICORN_CMD_ARGS", "--timeout 60")
+
+KAKAO_CLIENT_ID = "072d2d003b490b28d2f4e683471df7b8"
+KAKAO_REDIRECT_URI = "http://localhost:3000/callback"
+KAKAO_CLIENT_SECRET = ""  # 선택사항 (없어도 됨)
+
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "https://dietstory.shop"
+]
+
+CORS_ALLOW_METHODS = (
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+)
+
+CORS_ALLOW_HEADERS = (
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+)
+
+CORS_ALLOW_CREDENTIALS = True
+
