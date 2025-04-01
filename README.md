@@ -45,12 +45,18 @@
   <img src="https://img.shields.io/badge/Gunicorn-499848?style=for-the-badge">
 </div>
 
-👩‍💻 FE
-<a href="https://github.com/475jeeeun"><img src="https://github.com/475jeeeun.png" width="100px"/><br/><sub><b>@475jeeeun</b></sub></a>	<a href="https://github.com/tndls0720"><img src="https://github.com/tndls0720.png" width="100px"/><br/><sub><b>@tndls0720</b></sub></a>
-강지은	박수인
-👨‍💻 BE
-<a href="https://github.com/Kiyeoun"><img src="https://github.com/Kiyeoun.png" width="100px"/><br/><sub><b>@Kiyeoun</b></sub></a>	<a href="https://github.com/solbi723"><img src="https://github.com/solbi723.png" width="100px"/><br/><sub><b>@solbi723</b></sub></a>
-강기연	박솔비
+### 👩‍💻 FE
+
+| <a href="https://github.com/475jeeeun"><img src="https://github.com/475jeeeun.png" width="100px"/><br/><sub><b>@475jeeeun</b></sub></a> | <a href="https://github.com/tndls0720"><img src="https://github.com/tndls0720.png" width="100px"/><br/><sub><b>@tndls0720</b></sub></a> |
+|:----------------------------------:|:----------:|
+|                강지은                 |    박수인     |
+
+### 👨‍💻 BE
+
+| <a href="https://github.com/Kiyeoun"><img src="https://github.com/Kiyeoun.png" width="100px"/><br/><sub><b>@Kiyeoun</b></sub></a> | <a href="https://github.com/solbi723"><img src="https://github.com/solbi723.png" width="100px"/><br/><sub><b>@solbi723</b></sub></a> |
+|:----------------------------------:|:----------:|
+|                강기연                 |    박솔비     |
+
 
 
 ## 📑 프로젝트 규칙
