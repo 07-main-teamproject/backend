@@ -9,9 +9,6 @@ from .serializers import DietSerializer
 from rest_framework.permissions import IsAuthenticated
 import random
 import requests
-import logging
-
-logger = logging.getLogger(__name__)  # 로깅 설정
 
 class DietListView(APIView):
     permission_classes = [IsAuthenticated]
